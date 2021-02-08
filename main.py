@@ -12,9 +12,8 @@ class Point():
         self.loc = scr_coord
         self.grid_loc = grid_coord
 
+  
 
-     
-        
 def conv_screen_to_grid(x_pos, y_pos):
     x = x_pos / 10
     y = y_pos / 10
@@ -23,10 +22,7 @@ def conv_screen_to_grid(x_pos, y_pos):
 
 def grid_click(event):
     grid_coord = conv_screen_to_grid(event.x, event.y)
-    print(grid_coord)
-
-
-
+    #print(grid_coord)
 
 
 
