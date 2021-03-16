@@ -1,22 +1,32 @@
-1. remove ability to create diagnol lines DONE
-    - idea: possibly add functionality to draw two lines if user tries to create a diagnol line??? DONE
-
-2. Add draw resistor function
-     - also it will likely be necessary to create a class for each component
-     - each class will inherit from component class
-     - also need to remove ability to place a resistor near another resistor DONE
-     - need to remove ability to place wire through resistor DONE
-     - need to remove ability to place resistor on a wire CURRENT TASK
-     - add ability to rotate resistor
-
-3. add functionality where after the first mouse click, it follows your cursor
-   and redraws a new line depending on where your cursor is
-
-4. add ability to delete selected wire segments
-    - will require a wire class (anything that is placed on grid will likely need its own class)
-
-
 
 FUTURE IDEAS
 1. short/open circuit detection
 2. solve unknowns (such as voltage across resistor)
+3. allow components to detect series or paralell connections to other components
+    - parallel = two components are connected to the same 2 nodes
+
+4. add function to hide grid dots
+5. add abililty to save schematic as image
+
+
+KNOWN BUGS
+- when the light mode is changed while components are placed, the components stay the same color
+- the display wires will occasionally generate a random wire that goes away after selecting another point
+- when the user places a corner wire that is long (start point is far from the end point) the wire display is slow because
+- the dist(fucntion takes longer to calculate. This makes it laggy
+    - could avoid the dist function altogether
+
+current tasks:
+- give all classes string representation methods
+- rewrite the make connections method 
+- generalize more of the component methods (a lot of methods in resistor are repeated in VoltageSource)
+- make a decorator for the place_resistor and place_source methods in main (they are pretty much the same)
+
+
+Classes to make:
+    - Node
+    - Terminal
+
+
+
+It might help optimize my code if I replace some frequently searched lists with sets

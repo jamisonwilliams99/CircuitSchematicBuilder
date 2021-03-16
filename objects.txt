@@ -1,0 +1,40 @@
+Point:
+- loc: (int, int)   # screen coordinates
+- grid_loc: (int, int)  # grid coordinates
+- restricted: boolean
+
+Grid:
+- pts: dictionary (with Point objects)
+- components: dictionary(with component objects)
+
+
+Wire:
+- start_pt: Point
+- end_pt: Point
+- pts: list of Points
+- draw()
+
+Component:
+- center_pt: Point
+- orientation: string
+- restricted_points: list of points
+- two terminal objects
+
+Resistor: derived from Component
+- draw()
+- resistance: int
+
+
+
+Node: 
+- wires: list of wire objects
+- components: list of components it connects
+
+Terminal:
+- component: the component object that the terminal is attached to
+- node: the node (collection of wire objects) that the terminal connects the component to
+- pt: point where the terminal is (will be on the end of a component)
+- will be nested in the component class
+
+Source:
+

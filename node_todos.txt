@@ -1,0 +1,6 @@
+
+
+- when two separate nodes are placed, and then later joined by a wire, it should clear those two nodes and create a separate single node
+- when a wire is deleted, it needs to be removed from the node
+- when the grid is cleared, all node objects should be deleted
+- instead of associating each point with a wire, it could also be associated with a node which might make it easier to identify if a point is in a node
