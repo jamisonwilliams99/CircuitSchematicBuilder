@@ -13,6 +13,9 @@ class Point():
 
     def __repr__(self):
         return 'Point object at grid coordinate {}'.format(self.grid_loc)
+    
+    def __str__(self):
+        return str(self.grid_loc)
 
     def set_wire(self, wire):
         if self.wire is None:
@@ -69,10 +72,13 @@ class Grid():
         t2_pt = self.pts[str(
             (x+1, y))] if orientation == "horizontal" else self.pts[str((x, y+1))]
 
-        self.components[str(gcoord)] = VoltageSource(
+        new_source = VoltageSource(
             center_pt, t1_pt, t2_pt, restricted_points, orientation)
+
+        self.components[str(gcoord)] = new_source
         
-        self.check_for_connection()
+        self.check_new_component_connection(new_source)
+        
 
 
     def add_resistor(self, gcoord, orientation):
@@ -99,10 +105,13 @@ class Grid():
         t2_pt = self.pts[str(
             (x+1, y))] if orientation == "horizontal" else self.pts[str((x, y+1))]
 
-        self.components[str(gcoord)] = Resistor(
+        new_resistor = Resistor(
             center_pt, t1_pt, t2_pt, restricted_points, orientation)
 
-        self.check_for_connection()
+        self.components[str(gcoord)] = new_resistor
+        self.check_new_component_connection(new_resistor)
+
+
 
     # function should behave similarly to the add_wire() method
     # except it should not add to the wires list
@@ -138,18 +147,27 @@ class Grid():
 
         return self.track_stack
 
-    # TODO: don't really like how this is done
-    def check_for_connection(self):
+
+    def check_new_wire_connection(self, wire):
+        for w in self.wires:
+            if w != wire:
+                wire.make_connection(w.start_pt, w)
+                wire.make_connection(w.end_pt, w)
         for component in self.components.values():
-            for wire in self.wires:
-                component.connect_wire(wire, wire.start_pt)
-                component.connect_wire(wire, wire.end_pt)
+            t1_pt = component.t1.pt
+            t2_pt = component.t2.pt
+            wire.make_connection(t1_pt, component.t1)
+            wire.make_connection(t2_pt, component.t2)
 
-    def make_wire_connection(self):
-        pass
+    def check_new_component_connection(self, component):
+        for w in self.wires:
+            component.t1.make_connection(w.start_pt, w)
+            component.t1.make_connection(w.end_pt, w)
+            component.t2.make_connection(w.start_pt, w)
+            component.t2.make_connection(w.end_pt, w)
 
-    def determine_component_connections():
-        pass
+
+
 
     def update_nodes(self):
         nodes_wire_touches = []
@@ -186,7 +204,7 @@ class Grid():
     def add_wire_wrapper(self, s, e):
         self.add_wire(s, e)
         self.update_nodes()
-        self.print_all_nodes()
+        #self.print_all_nodes()
 
     # creates wire object and adds it to the logical grid
     # returns a false flag if the wire is invalid
@@ -202,9 +220,9 @@ class Grid():
         if orientation and direction:
             if self.is_valid_wire(s, e):
                 new_wire = Wire(s, e, self.pts, orientation, direction)
-                self.check_for_connection()
                 self.wires.append(new_wire)
                 self.new_wire_stack.append(new_wire)
+                self.check_new_wire_connection(new_wire)
                 return True
 
             else:

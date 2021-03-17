@@ -90,13 +90,19 @@ class Wire:
         for pt in self.points:
             pt.set_wire(self)
 
-    def make_connection(self, pt, ciruit_object):
+    def make_connection(self, pt, ciruit_object, is_first_connection=True):
         if pt is self.start_pt:
             self.start_pt_connection = ciruit_object
-            ciruit_object.make_connection(pt, self)
+            if is_first_connection:
+                ciruit_object.make_connection(pt, self, is_first_connection=False)
+            print("wire connected to {}".format(repr(ciruit_object)))
         elif pt is self.end_pt:
             self.end_pt_connection = ciruit_object
-            ciruit_object.make_connection(pt, self)
+            if is_first_connection:
+                ciruit_object.make_connection(pt, self, is_first_connection=False)
+            print("wire connected to {}".format(repr(ciruit_object)))
+        
+        
   
 
 
@@ -116,6 +122,31 @@ class Node:
 
 
 
+# each component will have two terminal objects which are then connected to wire objects
+class Terminal:
+    def __init__(self, pt, component, pos):
+        self.pt = pt
+        self.wire = None
+        self.component = component
+        self.pos = pos
+
+    def __repr__(self):
+        return 'Terminal at position {} on {}'.format(self.pos, str(self.component))
+    
+    def make_connection(self, pt, wire, is_first_connection=True):
+        if pt is self.pt:
+            self.wire = wire
+            if is_first_connection:
+                wire.make_connection(pt, self, is_first_connection=False)
+            print("{} connected to wire at terminal {}".format(str(self.component), self.pos))
+        elif pt is self.pt:
+            self.wire = wire
+            if is_first_connection:
+                wire.make_connection(pt, self, is_first_connection=False)
+            print("{} connected to wire at terminal {}".format(str(self.component), self.pos))
+
+
+
 class Component:
     def __init__(self, pt, t1_pt, t2_pt, restricted_pts, orientation):
         self.center_point = pt
@@ -129,37 +160,31 @@ class Component:
         self.parallel_connections = set()
 
         # terminal will be on the left/bottom depending on orientation
-        self.t1 = self.Terminal(t1_pt)
+        self.t1 = Terminal(t1_pt, self, "1")
         # terminal will be on the right/top depending on orientation
-        self.t2 = self.Terminal(t2_pt)
+        self.t2 = Terminal(t2_pt, self, "2")
 
     def __str__(self):
-        print(self.type)
+        return self.type
 
     def __repr__(self):
-        return '{} at {}'.format(self.type, self.center_point.grid_loc)
+        return '{} at {}'.format(self.type, self.center_point)
 
-    def make_connection(self, wire, pt):
+    def make_connection(self, pt, wire):
         if pt.grid_loc == self.t1.pt.grid_loc:
             self.t1.wire = wire
+            wire.make_connection(pt, self)
             print('connected to wire at t1')
         elif pt.grid_loc == self.t2.pt.grid_loc:
             self.t2.wire = wire
+            wire.make_connection(pt, self)
             print('connected to wire at t2')
 
     def erase(self, canvas):
         for line in self.lines:
             canvas.delete(line)
 
-    # each component will have two terminal objects which are then connected to Node objects
-    # it may be best to not make the terminal class an inner class so that it can refer to the component 
-    class Terminal:
-        def __init__(self, pt):
-            self.pt = pt
-            self.wire = None
-
-        def __repr__(self):
-            return 'Terminal connected to {}'.format(repr(self.wire))
+    
 
 
 
