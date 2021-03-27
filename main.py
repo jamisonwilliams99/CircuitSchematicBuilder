@@ -5,7 +5,7 @@ from tkinter import ttk
 from ttkthemes import themed_tk as tk
 
 from grid import *
-from component import Wire
+from component import *
 
 # Constants
 CANVAS_HEIGHT = 600
@@ -28,6 +28,11 @@ def conv_screen_to_grid(x_pos, y_pos):
 
     return (x, y)
 
+def conv_grid_to_screen(gcoord):
+    x = gcoord[0]*10
+    y = gcoord[1]*10
+    return x, y
+
 
 class CircuitSim:
     def __init__(self, master):
@@ -49,6 +54,7 @@ class CircuitSim:
         self.component_orientation = "horizontal"
         self.selected_component = None
         self.start_pt = None
+        self.component_window = None
         self.track_stack = []
 
         # stores all of the canvas circle objects that mark the grid points
@@ -91,7 +97,7 @@ class CircuitSim:
 
         self.grid = Grid()
         self.draw_grid()
-        
+
     def initiate_canvas(self):
         self.canvas = Canvas(self.master, width=CANVAS_WIDTH,
                              height=CANVAS_HEIGHT, bg=self.bg_color)
@@ -128,6 +134,9 @@ class CircuitSim:
     # determines what action to perfom when the user clicks on the grid
 
     def grid_click(self, event):
+        if self.component_window is not None:
+            self.close_component_window()
+
         grid_coord = conv_screen_to_grid(event.x, event.y)
         if self.wire_activated:
             self.record_point(grid_coord)
@@ -139,7 +148,6 @@ class CircuitSim:
             self.select_component(grid_coord)
 
     # records start/end point of a wire
-
     def record_point(self, gcoord):
         # return value of create_wire_point() could be a list of one or two wires
         point = self.grid.pts[str(gcoord)]
@@ -234,29 +242,18 @@ class CircuitSim:
 
     # takes in a grid coordinate as an argument, uses that coordinate to look up the point object in the grid.pts dictionary,
     # makes sure that the point is not restricted, and then creates a new resistor object, and then calls that new resistor objects draw() method
-    # TODO:make this a more general place_component(method)
-    def place_resistor(self, gcoord):
-        self.grid.add_resistor(gcoord, self.component_orientation)
-        resistor = self.grid.components[str(gcoord)]
-        resistor.draw(self.canvas, self.item_color)
-        self.canvas.after(50)
-        self.canvas.update()
-
-    def place_source(self, gcoord):
-        self.grid.add_source(gcoord, self.component_orientation)
-        source = self.grid.components[str(gcoord)]
-        source.draw(self.canvas, self.item_color)
-        self.canvas.after(50)
-        self.canvas.update()
-
     def place_component(self, gcoord):
         point = self.grid.pts[str(gcoord)]
-        if not point.restricted:
+        if not point.restricted_for_components:
             if self.resistor_activated:
-                self.place_resistor(gcoord)
+                self.grid.add_component(gcoord, self.component_orientation, "Resistor")
             elif self.source_activated:
-                self.place_source(gcoord)
-
+                self.grid.add_component(gcoord, "vertical", "Source")
+                
+            component = self.grid.components[str(gcoord)]
+            component.draw(self.canvas, self.item_color)
+            self.canvas.after(50)
+            self.canvas.update()
 
     # rotates the selected component when the user presses 'r'
     def rotate_component(self, event):
@@ -272,7 +269,6 @@ class CircuitSim:
             self.canvas.update()
 
     # selects the component (or wire) that the user clicks on
-
     def select_component(self, gcoord):
         try:
             # if there is not already a component selected
@@ -291,6 +287,7 @@ class CircuitSim:
                     self.selected_component.selected = True
                     self.component_is_selected = True
                     self.selected_component.draw(self.canvas, self.item_color)
+                    self.display_component_window(gcoord)
             # there is already a component selected; in this case, deselect it and and reset all selection flags
             else:
                 self.selected_component.selected = False
@@ -300,6 +297,63 @@ class CircuitSim:
                 self.selected_component = None
         except KeyError:
             pass
+
+    def display_component_value(self, gcoord):
+        x, y = conv_grid_to_screen(gcoord)
+        val_str = str(self.selected_component.get_controlled_value()) + self.selected_component.symbol
+
+        if self.selected_component.orientation == "vertical":
+            x = x - 20 - len(val_str)*5
+            y = y - 10
+        elif self.selected_component.orientation == "horizontal":
+            x = x - 20
+            y = y - 30
+    
+        component_val_frame = ttk.Frame(self.master)
+        component_val_label = ttk.Label(component_val_frame, text=val_str,background='black', foreground='white', font=('Arial', 7))
+        component_val_label.pack()
+        component_val_window = self.canvas.create_window(x, y, anchor='nw', window=component_val_frame)
+
+    def display_component_window(self, gcoord):
+        x, y = conv_grid_to_screen(gcoord)
+        x, y = x+20, y+20
+
+        def update_component():
+            val = int(measurement_entry.get())
+            self.selected_component.set_controlled_value(val)
+            #self.display_component_value(gcoord)
+        
+        measurement = self.selected_component.measurement
+        symbol = self.selected_component.symbol
+
+        component_frame = ttk.Frame(self.master)
+
+        name_label = ttk.Label(component_frame, text=self.selected_component.name)
+        name_label.grid(row=0, column=0, padx=(20, 0), pady=(10, 0))
+
+        measurement_entry = ttk.Entry(component_frame)
+        current_val = str(self.selected_component.get_controlled_value())
+        measurement_entry.insert(0, current_val)
+        measurement_entry.grid(row=1, column=0, padx=(20, 3))
+
+        measurement_label = ttk.Label(component_frame, text=symbol, width=2)
+        measurement_label.grid(row=1, column=1)
+
+        dependent_var_labels = []
+        r = 2
+        for key, value in self.selected_component.dependent_variables.items():
+            text_str = "{}: {}{}".format(key, value[0], value[1])
+            label = ttk.Label(component_frame, text=text_str)
+            label.grid(row=r, column=0)
+            r+=1
+
+        update_button = ttk.Button(component_frame, text="Update", command=update_component)
+        update_button.grid(row=r, column=0, padx=(20, 0))
+
+        self.component_window = self.canvas.create_window(x, y, anchor='nw', window=component_frame)
+
+    def close_component_window(self):
+        self.canvas.delete(self.component_window)
 
     # erases the selected component from the grid when the user presses "e"
     def delete_component(self, event):

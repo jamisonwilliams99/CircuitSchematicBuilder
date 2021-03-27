@@ -1,0 +1,20 @@
+Taking entry for components:
+    - should say what kind of component it is on the top of window (with an identifier ie R1, R2 ect)
+        - this identifier will require a class attribute 
+    - whatever is entered to this field should update the components 'controlled value'
+        - certain values cannot be directly controlled (you cannot set the voltage of a resistor directly, this is a function of the current and the resistance)
+    - should display the other values at the bottom of the window (voltage/ current through resistor)
+
+
+MAKE A circuit analysis module class
+    - all parallel components have the same voltage
+    - all series components have the same current
+
+
+
+circuit analysis:
+    - should probably make funcionality to identify loops
+ohms_law()
+voltage_division()
+kvl()
+kcl()

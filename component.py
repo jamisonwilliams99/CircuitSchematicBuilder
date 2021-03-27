@@ -12,6 +12,7 @@ class Wire:
         self.selected = False
         self.node = None
 
+
         # wire could be connected to some point or another wire
         self.start_pt_connection = None
         self.end_pt_connection = None
@@ -27,6 +28,7 @@ class Wire:
     def __repr__(self):
         return 'Wire: {} -> {}'.format(self.start_pt.grid_loc, self.end_pt.grid_loc)
 
+    #@node.setter
     def set_node(self, node):
         self.node = node
 
@@ -95,12 +97,12 @@ class Wire:
             self.start_pt_connection = ciruit_object
             if is_first_connection:
                 ciruit_object.make_connection(pt, self, is_first_connection=False)
-            print("wire connected to {}".format(repr(ciruit_object)))
+            #print("wire connected to {}".format(repr(ciruit_object)))
         elif pt is self.end_pt:
             self.end_pt_connection = ciruit_object
             if is_first_connection:
                 ciruit_object.make_connection(pt, self, is_first_connection=False)
-            print("wire connected to {}".format(repr(ciruit_object)))
+            #print("wire connected to {}".format(repr(ciruit_object)))
         
         
   
@@ -108,13 +110,20 @@ class Wire:
 
 class Node:
     def __init__(self, wire_stack):
-        self.wires = []
+        self.wires = []             # TODO: might make this a set. not sure if order of wires will matter but if it is a set then removing the wire will be quicker
         self.add_wire(wire_stack)
+        self.components = set()
 
     def add_wire(self, wire_stack):
         for wire in wire_stack:
             self.wires.append(wire)
-            wire.set_node(self)
+            wire.node = (self)
+
+    def add_component(self, component): 
+        self.components.add(component)
+
+    def remove_wire(self, wire):
+        self.wires.remove(wire)
 
     def __repr__(self):
         s = [repr(wire) for wire in self.wires]
@@ -136,28 +145,32 @@ class Terminal:
     def make_connection(self, pt, wire, is_first_connection=True):
         if pt is self.pt:
             self.wire = wire
+            wire.node.add_component(self.component)
             if is_first_connection:
                 wire.make_connection(pt, self, is_first_connection=False)
-            print("{} connected to wire at terminal {}".format(str(self.component), self.pos))
-        elif pt is self.pt:
-            self.wire = wire
-            if is_first_connection:
-                wire.make_connection(pt, self, is_first_connection=False)
-            print("{} connected to wire at terminal {}".format(str(self.component), self.pos))
+            #print("{} connected to wire at terminal {}".format(str(self.component), self.pos))
+
 
 
 
 class Component:
-    def __init__(self, pt, t1_pt, t2_pt, restricted_pts, orientation):
+    id = 1
+    @classmethod
+    def _get_next_id(cls):
+        result = cls.id
+        cls.id+=1
+        return result
+
+    def __init__(self, pt, t1_pt, t2_pt, orientation):
         self.center_point = pt
         self.orientation = orientation
         self.lines = []
-        self.restricted_points = restricted_pts
         self.selected = False
         self.color = "white"
         self.type = "Undefined"
         self.series_connections = set()
         self.parallel_connections = set()
+        self.restricted_points = []
 
         # terminal will be on the left/bottom depending on orientation
         self.t1 = Terminal(t1_pt, self, "1")
@@ -174,25 +187,55 @@ class Component:
         if pt.grid_loc == self.t1.pt.grid_loc:
             self.t1.wire = wire
             wire.make_connection(pt, self)
-            print('connected to wire at t1')
         elif pt.grid_loc == self.t2.pt.grid_loc:
             self.t2.wire = wire
             wire.make_connection(pt, self)
-            print('connected to wire at t2')
+
+
+    def make_parallel_connection(self, component):
+        self.parallel_connections.add(component)
+    
+    def make_series_connection(self, component):
+        self.series_connections.add(component)
 
     def erase(self, canvas):
         for line in self.lines:
             canvas.delete(line)
 
+    def restrict_points(self, pts):
+        gcoord = self.center_point.grid_loc
+        x, y = gcoord[0], gcoord[1]
+        restricted_coords = self.det_restricted_coords(x,y)
+        for x, y in restricted_coords:
+            pt =  pts[str((x,y))]
+            pt.restricted = True
+
+
+    # ABSTRACT METHODS - implemented in derived classes
+    def set_controlled_value(self, value):
+        pass
+
+    def get_controlled_value(self):
+        pass
+
+    def det_restricted_coords(self):
+        pass
+
     
 
 
-
-
 class Resistor(Component):
-    def __init__(self, pt, t1_pt, t2_pt, restricted_pts, orientation):
-        super().__init__(pt, t1_pt, t2_pt, restricted_pts, orientation)
+    def __init__(self, pt, t1_pt, t2_pt, orientation):
+        super().__init__(pt, t1_pt, t2_pt, orientation)
         self.type = "Resistor"
+        self.name = "R{}".format(Resistor._get_next_id())
+        self.resistance = -1
+        self.dependent_variables = {
+            "voltage drop": [-1, 'V'],
+            "current": [-1, 'A']
+        }
+        self.symbol = '\u03A9' # capitol omega
+        self.measurement = "Resistance"
 
     def draw(self, canvas, c):
         self.color = "blue" if self.selected else c
@@ -245,17 +288,63 @@ class Resistor(Component):
             self.orientation = "horizontal"
             self.draw(canvas, self.color)
 
+    def is_resistance_set(self):
+        if self.resistance == -1:
+            return False
+        else: 
+            return True
+
+    #TODO
+    def update_voltage_drop(self, voltage):
+        self.dependent_variables["voltage drop"][0] = voltage
+        self.ohms_law()
+
+    
+    #TODO
+    def ohms_law(self, known_variable = "voltage drop"):
+        if known_variable == "voltage drop" and self.is_resistance_set:
+            voltage_drop = self.dependent_variables["voltage drop"][0]
+            current =  voltage_drop / self.resistance 
+            self.dependent_variables["current"][0] = current
 
 
+    # IMPLEMENTATION OF ABSTRACT METHODS
+    def set_controlled_value(self, value):
+        try:
+            if value > 0:
+                self.resistance = value
+            else:
+                raise ValueError
+        except ValueError:
+            print("cannot be a negative number")
+
+    def get_controlled_value(self):
+        return self.resistance
+
+    def det_restricted_coords(self, x, y):
+        restricted_coords = [
+            (x-1, y), (x-2, y), (x, y), (x+1, y), (x+2, y),
+            (x-2, y+1), (x-1, y+1), (x, y+1), (x+1, y+1), (x+2, y+1),
+            (x-2, y-1), (x-1, y-1), (x, y-1), (x+1, y-1), (x+2, y-1)
+        ]
+        return restricted_coords
 
 
 class VoltageSource(Component):
-    def __init__(self, pt, t1_pt, t2_pt, restricted_pts, orientation):
-        super().__init__(pt, t1_pt, t2_pt, restricted_pts, orientation)
+
+    def __init__(self, pt, t1_pt, t2_pt, orientation):
+        super().__init__(pt, t1_pt, t2_pt, orientation)
         self.type = "Source"
+        self.name = "V{}".format(VoltageSource._get_next_id())
+        self.voltage = -1
+        self.dependent_variables = {
+            "current": [-1, 'A']
+        }
+        self.symbol = 'V'
+        self.measurement = "Voltage"
 
     def draw(self, canvas, c):
-        self.color = "blue" if self.selected else c
+        self.color = "blue" if self.selected else "black"
         center = self.center_point.loc
 
         if self.lines:
@@ -279,8 +368,32 @@ class VoltageSource(Component):
         y2 = center[1]+10
 
         self.lines.append(canvas.create_oval(
-            x1, y1, x2, y2, outline=self.color, fill='black'))
+            x1, y1, x2, y2, outline=self.color, fill='white'))
         draw_plus()
         draw_minus()
 
+    # IMPLEMENTATION OF ABSTRACT METHODS
+    def set_controlled_value(self, value):
+        try:
+            if value > 0:
+                self.voltage = value
+                # TODO: make this a method
+                for c in self.parallel_connections:
+                    c.update_voltage_drop(self.voltage)
+            else:
+                raise ValueError
+        except ValueError:
+            print("cannot be a negative number")
+    
+    def get_controlled_value(self):
+        return self.voltage
 
+    #TODO: IMPLEMENT
+    def det_restricted_coords(self, x, y):
+        restricted_coords = [
+            (x-1, y), (x-2, y), (x-3, y), (x, y), (x+1, y), (x+2, y), (x+3, y),
+            (x-2, y+1), (x-1, y+1), (x, y+1), (x+1, y+1), (x+2, y+1),
+            (x-2, y-1), (x-1, y-1), (x, y-1), (x+1, y-1), (x+2, y-1)
+        ]
+        return restricted_coords
+        

@@ -11,22 +11,22 @@ FUTURE IDEAS
 
 KNOWN BUGS
 - when the light mode is changed while components are placed, the components stay the same color
-- the display wires will occasionally generate a random wire that goes away after selecting another point
 - when the user places a corner wire that is long (start point is far from the end point) the wire display is slow because
 - the dist(fucntion takes longer to calculate. This makes it laggy
     - could avoid the dist function altogether
 
+- when corner wires are used, it does not make proper parallel/series connections
+
+
 current tasks:
-- give all classes string representation methods
-- rewrite the make connections method 
 - generalize more of the component methods (a lot of methods in resistor are repeated in VoltageSource)
 - make a decorator for the place_resistor and place_source methods in main (they are pretty much the same)
-
-
-Classes to make:
-    - Node
-    - Terminal
-
+- add proper "pythonic" setters and getters where they are needed
 
 
 It might help optimize my code if I replace some frequently searched lists with sets
+
+
+
+- When a wire is deleted, it needs to be removed from its nodes
+- When a component is deleted, it needs to be removed from the parallel set of whatever component that it was parallel to
