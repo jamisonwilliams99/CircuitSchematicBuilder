@@ -183,15 +183,6 @@ class Component:
     def __repr__(self):
         return '{} at {}'.format(self.type, self.center_point)
 
-    def make_connection(self, pt, wire):
-        if pt.grid_loc == self.t1.pt.grid_loc:
-            self.t1.wire = wire
-            wire.make_connection(pt, self)
-        elif pt.grid_loc == self.t2.pt.grid_loc:
-            self.t2.wire = wire
-            wire.make_connection(pt, self)
-
-
     def make_parallel_connection(self, component):
         self.parallel_connections.add(component)
     
@@ -337,9 +328,7 @@ class VoltageSource(Component):
         self.type = "Source"
         self.name = "V{}".format(VoltageSource._get_next_id())
         self.voltage = -1
-        self.dependent_variables = {
-            "current": [-1, 'A']
-        }
+        self.dependent_variables = {}
         self.symbol = 'V'
         self.measurement = "Voltage"
 
@@ -377,16 +366,18 @@ class VoltageSource(Component):
         try:
             if value > 0:
                 self.voltage = value
-                # TODO: make this a method
-                for c in self.parallel_connections:
-                    c.update_voltage_drop(self.voltage)
+                self.update_parallel_voltages()
             else:
                 raise ValueError
         except ValueError:
             print("cannot be a negative number")
-    
+
     def get_controlled_value(self):
         return self.voltage
+
+    def update_parallel_voltages(self):
+        for c in self.parallel_connections:
+                    c.update_voltage_drop(self.voltage)
 
     #TODO: IMPLEMENT
     def det_restricted_coords(self, x, y):
