@@ -379,7 +379,6 @@ class VoltageSource(Component):
         for c in self.parallel_connections:
                     c.update_voltage_drop(self.voltage)
 
-    #TODO: IMPLEMENT
     def det_restricted_coords(self, x, y):
         restricted_coords = [
             (x-1, y), (x-2, y), (x-3, y), (x, y), (x+1, y), (x+2, y), (x+3, y),

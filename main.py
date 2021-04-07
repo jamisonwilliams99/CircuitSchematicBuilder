@@ -7,6 +7,15 @@ from ttkthemes import themed_tk as tk
 from grid import *
 from component import *
 
+"""
+Circuit Schematic Builder
+
+Allows the user to build circuit schematics and input values to different components
+in the schematic. 
+
+"""
+
+
 # Constants
 CANVAS_HEIGHT = 600
 CANVAS_WIDTH = 600
@@ -113,7 +122,6 @@ class CircuitSim:
         self.canvas.configure(bg=self.bg_color)
 
     # draws the grid and also connects the maps the visual points to the points in the grid backend
-    # REFACTORING TODO: change this to where the key for each point in grid.pts is just the point.grid_loc tuple instead of a string repr
     def draw_grid(self):
         for y in range(1, NUM_PTS):
             for x in range(1, NUM_PTS):
@@ -124,7 +132,6 @@ class CircuitSim:
                 mid_pt = ((x1+x2)/2, (y1+y2)/2)
                 self.grid_dots.append(self.canvas.create_oval(
                     x*10, y*10, x*10+2, y*10+2, fill=self.item_color))
-                # TODO: change points are instantiated and stored (change key to tuple istead of a string)
                 self.grid.pts[(x, y)] = Point((x1, y1), (x, y))
 
     def erase_grid(self):
@@ -132,7 +139,6 @@ class CircuitSim:
             self.canvas.delete(dot)
 
     # determines what action to perfom when the user clicks on the grid
-
     def grid_click(self, event):
         if self.component_window is not None:
             self.close_component_window()
