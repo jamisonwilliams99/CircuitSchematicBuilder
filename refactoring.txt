@@ -1,0 +1,6 @@
+refactoring:
+
+-modify the keys of the pts dictionary to just be the point.grid_loc tuple
+    - everywhere that accesses the dictionary will need to reflect this change.
+
+- make a function for accessing the points dictionary

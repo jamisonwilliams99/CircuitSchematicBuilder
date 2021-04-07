@@ -73,19 +73,19 @@ class Wire:
 
         if orientation == "vertical" and direction == "down":
             for y in range(s_y, e_y+1):
-                pt = self.grid_pts[str((s_x, y))]
+                pt = self.grid_pts[(s_x, y)]
                 self.points.append(pt)
         elif orientation == "vertical" and direction == "up":
             for y in range(e_y, s_y+1):
-                pt = self.grid_pts[str((s_x, y))]
+                pt = self.grid_pts[(s_x, y)]
                 self.points.append(pt)
         elif orientation == "horizontal" and direction == "right":
             for x in range(s_x, e_x+1):
-                pt = self.grid_pts[str((x, s_y))]
+                pt = self.grid_pts[(x, s_y)]
                 self.points.append(pt)
         elif orientation == "horizontal" and direction == "left":
             for x in range(e_x, s_x+1):
-                pt = self.grid_pts[str((x, s_y))]
+                pt = self.grid_pts[(x, s_y)]
                 self.points.append(pt)
     
     def connect_wire_to_pt(self):
@@ -198,7 +198,7 @@ class Component:
         x, y = gcoord[0], gcoord[1]
         restricted_coords = self.det_restricted_coords(x,y)
         for x, y in restricted_coords:
-            pt =  pts[str((x,y))]
+            pt =  pts[(x,y)]
             pt.restricted = True
 
 

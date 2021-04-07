@@ -60,6 +60,8 @@ class CircuitSim:
         # stores all of the canvas circle objects that mark the grid points
         self.grid_dots = []
 
+        self.master.title("Circuit Schematic Builder")
+
         self.menu_frame = Frame(self.master)
         self.menu_frame.pack()
 
@@ -88,9 +90,6 @@ class CircuitSim:
             self.menu_frame, width=5, text="Clear", takefocus=False, command=self.clear)
         self.clear_button.grid(row=0, column=4, padx=3, pady=5)
 
-        self.color_mode_button = ttk.Button(
-            self.menu_frame, width=5, text="Light", takefocus=False, command=self.switch_color_mode)
-        self.color_mode_button.grid(row=0, column=5, padx=3, pady=5)
 
         self.canvas = None
         self.initiate_canvas()
@@ -114,7 +113,7 @@ class CircuitSim:
         self.canvas.configure(bg=self.bg_color)
 
     # draws the grid and also connects the maps the visual points to the points in the grid backend
-
+    # REFACTORING TODO: change this to where the key for each point in grid.pts is just the point.grid_loc tuple instead of a string repr
     def draw_grid(self):
         for y in range(1, NUM_PTS):
             for x in range(1, NUM_PTS):
@@ -125,7 +124,8 @@ class CircuitSim:
                 mid_pt = ((x1+x2)/2, (y1+y2)/2)
                 self.grid_dots.append(self.canvas.create_oval(
                     x*10, y*10, x*10+2, y*10+2, fill=self.item_color))
-                self.grid.pts[str((x, y))] = Point((x1, y1), (x, y))
+                # TODO: change points are instantiated and stored (change key to tuple istead of a string)
+                self.grid.pts[(x, y)] = Point((x1, y1), (x, y))
 
     def erase_grid(self):
         for dot in self.grid_dots:
@@ -150,7 +150,9 @@ class CircuitSim:
     # records start/end point of a wire
     def record_point(self, gcoord):
         # return value of create_wire_point() could be a list of one or two wires
-        point = self.grid.pts[str(gcoord)]
+
+        #TODO: CHANGE DICTIONARY ACESS
+        point = self.grid.pts[gcoord]
         # could also be -1 if either only one point has been selected
         new_wires = self.grid.create_wire_point(point)
         # or if two points have been selected but it does not form a valid wire
@@ -168,9 +170,10 @@ class CircuitSim:
         if self.mouse_tracker_activated:
             self.clear_temp_wires()
             self.grid.track_stack.clear()
-
+            
+            
             e_g = conv_screen_to_grid(event.x, event.y)
-            end_pt = self.grid.pts[str(e_g)]
+            end_pt = self.grid.pts[e_g]
 
             self.track_stack = self.grid.add_temp_wire(self.start_pt, end_pt)
 
@@ -243,14 +246,14 @@ class CircuitSim:
     # takes in a grid coordinate as an argument, uses that coordinate to look up the point object in the grid.pts dictionary,
     # makes sure that the point is not restricted, and then creates a new resistor object, and then calls that new resistor objects draw() method
     def place_component(self, gcoord):
-        point = self.grid.pts[str(gcoord)]
+        point = self.grid.pts[gcoord]
         if not point.restricted_for_components:
             if self.resistor_activated:
                 self.grid.add_component(gcoord, self.component_orientation, "Resistor")
             elif self.source_activated:
                 self.grid.add_component(gcoord, "vertical", "Source")
-                
-            component = self.grid.components[str(gcoord)]
+
+            component = self.grid.components[gcoord]
             component.draw(self.canvas, self.item_color)
             self.canvas.after(50)
             self.canvas.update()
@@ -283,7 +286,7 @@ class CircuitSim:
                     self.selected_component.draw(self.canvas, self.item_color)
                 # the selected component is not a wire; it is some other component
                 else:
-                    self.selected_component = self.grid.components[str(gcoord)]
+                    self.selected_component = self.grid.components[gcoord]
                     self.selected_component.selected = True
                     self.component_is_selected = True
                     self.selected_component.draw(self.canvas, self.item_color)
@@ -378,7 +381,7 @@ class CircuitSim:
     # returns true if the point that is clicked on is a point that a wire crosses through
     # If it returns true, it also returns the wire that the point is apart of
     def clicked_wire(self, gcoord):
-        pt = self.grid.pts[str(gcoord)]
+        pt = self.grid.pts[gcoord]
         for wire in self.grid.wires:
             if pt in wire.points:
                 return True, wire

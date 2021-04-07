@@ -80,11 +80,11 @@ class Grid():
             dis2 = math.dist(s.grid_loc, p2)
 
             if dis1 <= dis2:
-                self.add_temp_wire(s, self.pts[str(p1)])
-                self.add_temp_wire(self.pts[str(p1)], e)
+                self.add_temp_wire(s, self.pts[p1])
+                self.add_temp_wire(self.pts[p1], e)
             else:
-                self.add_temp_wire(s, self.pts[str(p2)])
-                self.add_temp_wire(self.pts[str(p2)], e)
+                self.add_temp_wire(s, self.pts[p2])
+                self.add_temp_wire(self.pts[p2], e)
 
         return self.track_stack
 
@@ -240,28 +240,28 @@ class Grid():
             dis2 = math.dist(s.grid_loc, p2)
 
             if dis1 <= dis2:
-                valid = self.add_wire(s, self.pts[str(p1)])
+                valid = self.add_wire(s, self.pts[p1])
                 # if the first part of the corner wire is valid, recursiveley add the second half
                 if valid:
-                    self.add_wire(self.pts[str(p1)], e)
+                    self.add_wire(self.pts[p1], e)
             else:
                 # if the first part of the corner wire is valid, recursiveley add the second half
-                valid = self.add_wire(s, self.pts[str(p2)])
+                valid = self.add_wire(s, self.pts[p2])
                 if valid:
-                    self.add_wire(self.pts[str(p2)], e)
+                    self.add_wire(self.pts[p2], e)
 
     def add_component(self, gcoord, orientation, type_indicator):
-        center_pt = self.pts[str(gcoord)]
+        center_pt = self.pts[gcoord]
         x = gcoord[0]
         y = gcoord[1]
 
         center_pt.restricted_for_wires = True
         x, y = gcoord[0], gcoord[1]
 
-        t1_pt = self.pts[str(
-            (x-1, y))] if orientation == "horizontal" else self.pts[str((x, y+1))]
-        t2_pt = self.pts[str(
-            (x+1, y))] if orientation == "horizontal" else self.pts[str((x, y-1))]
+        t1_pt = self.pts[
+            (x-1, y)] if orientation == "horizontal" else self.pts[(x, y+1)]
+        t2_pt = self.pts[
+            (x+1, y)] if orientation == "horizontal" else self.pts[(x, y-1)]
 
         if type_indicator == "Resistor":
             new_component = Resistor(center_pt, t1_pt, t2_pt, orientation)
@@ -270,7 +270,7 @@ class Grid():
 
         new_component.restrict_points(self.pts)
 
-        self.components[str(gcoord)] = new_component
+        self.components[gcoord] = new_component
         self.check_new_component_connection(new_component)
         self.new_components.add(new_component)
 
@@ -311,15 +311,15 @@ class Grid():
         line_pts = []
         if orientation == "vertical":
             if s_y < e_y:
-                line_pts = [self.pts[str((s_x, y))] for y in range(s_y, e_y)]
+                line_pts = [self.pts[(s_x, y)] for y in range(s_y, e_y)]
             else:
-                line_pts = [self.pts[str((s_x, y))] for y in range(e_y, s_y)]
+                line_pts = [self.pts[(s_x, y)] for y in range(e_y, s_y)]
 
         elif orientation == "horizontal":
             if s_x < e_x:
-                line_pts = [self.pts[str((x, s_y))] for x in range(s_x, e_x)]
+                line_pts = [self.pts[(x, s_y)] for x in range(s_x, e_x)]
             else:
-                line_pts = [self.pts[str((x, s_y))] for x in range(e_x, s_x)]
+                line_pts = [self.pts[(x, s_y)] for x in range(e_x, s_x)]
 
         for pt in line_pts:
             if pt.restricted_for_wires:
@@ -329,7 +329,7 @@ class Grid():
         else:
             return True
 
-    def remove_wire(self, w):  # TODO
+    def remove_wire(self, w):  
         self.wires.remove(w)
         node = w.node
         node.remove_wire(w)
@@ -362,11 +362,11 @@ class Grid():
 
     def remove_component(self, pt):
         gcoord = pt.grid_loc
-        component = self.components.pop(str(gcoord))
+        component = self.components.pop(gcoord)
         self.new_components.discard(component)
 
         for x, y in component.restricted_points:
-            self.pts[str((x, y))].restricted = False
+            self.pts[(x, y)].restricted = False
 
         for c in component.parallel_connections:
             c.parallel_connections.remove(component)
